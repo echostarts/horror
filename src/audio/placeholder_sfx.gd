@@ -21,6 +21,10 @@ static func build_library() -> Dictionary:
 		breaths.append(_wav(_breath(0.6 + 0.1 * float(i))))
 	lib[&"PLACEHOLDER_breath"] = breaths
 	lib[&"PLACEHOLDER_amb_l1"] = [_wav(_ambience_loop(4.0), true)] as Array[AudioStream]
+	lib[&"PLACEHOLDER_amb_l2"] = [_wav(_ambience_l2(8.0), true)] as Array[AudioStream]
+	lib[&"PLACEHOLDER_amb_l3"] = [_wav(_ambience_l3(6.0), true)] as Array[AudioStream]
+	lib[&"PLACEHOLDER_sting"] = [_wav(_sting())] as Array[AudioStream]
+	lib[&"PLACEHOLDER_lamp_click"] = [_wav(_lamp_click())] as Array[AudioStream]
 	return lib
 
 # ------------------------------------------------------------- генераторы
@@ -115,6 +119,78 @@ static func _ambience_loop(duration: float) -> PackedFloat32Array:
 		out[i] *= k
 		out[n - 1 - i] *= k
 	return out
+
+## L2: стоны здания и стуки труб (вплывает на средней Tension).
+static func _ambience_l2(duration: float) -> PackedFloat32Array:
+	var n := int(duration * RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var rng := RandomNumberGenerator.new()
+	var groan := 0.0
+	for i: int in n:
+		var t := float(i) / float(RATE)
+		groan += 0.0012 * (rng.randf_range(-1.0, 1.0) - groan)
+		var sample := groan * 14.0 * (0.5 + 0.5 * sin(TAU * 0.07 * t))
+		for knock_t: float in [1.7, 4.2, 6.9]:
+			var dt := t - knock_t
+			if dt >= 0.0 and dt < 0.7:
+				sample += sin(TAU * 82.0 * dt) * exp(-9.0 * dt) * 0.5
+		out[i] = sample
+	_fade_edges(out)
+	return out
+
+## L3: саб-дрон с биением + давление воздуха (верхняя треть Tension).
+static func _ambience_l3(duration: float) -> PackedFloat32Array:
+	var n := int(duration * RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var rng := RandomNumberGenerator.new()
+	var air := 0.0
+	for i: int in n:
+		var t := float(i) / float(RATE)
+		air += 0.004 * (rng.randf_range(-1.0, 1.0) - air)
+		# 38 и 41.667 Гц — целое число периодов на 6 c: луп без щелчка.
+		out[i] = (sin(TAU * 38.0 * t) + sin(TAU * 41.666667 * t)) * 0.17 \
+			+ air * 1.6 * (0.6 + 0.4 * sin(TAU * 0.17 * t))
+	return out
+
+## Жёсткий стингер скер-слота 1: нисходящий металлический скрежет.
+static func _sting() -> PackedFloat32Array:
+	var n := int(0.9 * RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var rng := RandomNumberGenerator.new()
+	var phase := 0.0
+	for i: int in n:
+		var t := float(i) / float(RATE)
+		var k := t / 0.9
+		var freq := lerpf(2600.0, 620.0, pow(k, 0.6))
+		phase += TAU * freq / float(RATE)
+		var env := minf(t / 0.012, 1.0) * pow(1.0 - k, 1.3)
+		var sample := (sin(phase) * 0.7 + rng.randf_range(-1.0, 1.0) * 0.45) * env
+		out[i] = clampf(sample * 1.5, -0.95, 0.95)   # лёгкий клип — грязнее
+	return out
+
+## Щелчок гаснущей лампы (скер-слот 2, финал).
+static func _lamp_click() -> PackedFloat32Array:
+	var n := int(0.09 * RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var rng := RandomNumberGenerator.new()
+	for i: int in n:
+		var t := float(i) / float(RATE)
+		var click := (0.85 if i < 5 else 0.0) * (1.0 if i % 2 == 0 else -1.0)
+		out[i] = click + sin(TAU * 64.0 * t) * exp(-40.0 * t) * 0.5 \
+			+ rng.randf_range(-1.0, 1.0) * exp(-90.0 * t) * 0.3
+	return out
+
+static func _fade_edges(samples: PackedFloat32Array) -> void:
+	var fade := int(0.05 * RATE)
+	var n := samples.size()
+	for i: int in fade:
+		var k := float(i) / float(fade)
+		samples[i] *= k
+		samples[n - 1 - i] *= k
 
 static func _wav(samples: PackedFloat32Array, looped: bool = false) -> AudioStreamWAV:
 	var bytes := PackedByteArray()

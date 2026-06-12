@@ -64,7 +64,7 @@ func _process(delta: float) -> void:
 	_graph.push_sample(Director.tension)
 	if not _panel.visible:
 		return
-	_info.text = "FPS: %d (%.2f ms)\nЭтаж: %d | Фаза: %s | Серия: %d | Ошибки: %d\nSeed: %d\nTension: %.1f\nАномалия (Q): %s" % [
+	_info.text = "FPS: %d (%.2f ms)\nЭтаж: %d | Фаза: %s | Серия: %d | Ошибки: %d\nSeed: %d\nTension: %.1f | Tier≤%d%s%s\nАномалия (Q): %s" % [
 		Engine.get_frames_per_second(),
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 		GameState.current_floor,
@@ -73,5 +73,8 @@ func _process(delta: float) -> void:
 		GameState.mistakes,
 		GameState.run_seed,
 		Director.tension,
+		Director.allowed_max_tier(),
+		" | RELIEF" if Director.relief_active() else "",
+		" | SILENCE" if Director.is_silence_active() else "",
 		_anomaly,
 	]

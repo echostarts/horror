@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AnomalyDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/anomalies/anomaly_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://src/anomalies/effects/e2_silhouette.gd" id="2_fx"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"e2_silhouette"
+display_name = "Силуэт пролётом выше уходит от взгляда"
+category = &"ENTITY"
+tier = 3
+spawn_weight = 1.0
+min_tension = 55.0
+effect_script = ExtResource("2_fx")

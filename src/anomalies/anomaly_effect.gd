@@ -18,3 +18,9 @@ func post_build(_landing: FlightModule, _flight: FlightModule) -> void:
 ## Игрок вошёл в марш-носитель (для событийных аномалий вроде F2).
 func on_flight_entered(_flight: FlightModule) -> void:
 	pass
+
+## Вопрос отыгран и уходит из стейджа. Нужен ТОЛЬКО эффектам с глобальными
+## побочками вне модулей (например, F1 включает эхо шагов в AudioDirector) —
+## геометрию модулей чистит пересборка, её тут трогать не надо.
+func teardown() -> void:
+	pass

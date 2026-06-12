@@ -35,6 +35,8 @@ var _sway_time: float = 0.0
 var _stamina: float = 1.0
 var _winded: bool = false
 var _breath_timer: float = 0.0
+var _shake: float = 0.0
+var _shake_rng := RandomNumberGenerator.new()
 
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera
@@ -56,6 +58,10 @@ func apply_look(relative: Vector2) -> void:
 func teleport(delta_transform: Transform3D) -> void:
 	global_transform = delta_transform * global_transform
 	velocity = delta_transform.basis * velocity
+
+## Микро-шейк на стингерах (Section 8: ≤0.3 c, с капом).
+func add_shake(amount: float) -> void:
+	_shake = minf(_shake + amount, 0.3)
 
 func _physics_process(delta: float) -> void:
 	_gamepad_look(delta)
@@ -102,8 +108,15 @@ func _update_camera_feel(delta: float, ground_speed: float, sprinting: bool) -> 
 	var bob_x := sin(_bob_phase) * BOB_AMP_X if _head_bob_enabled and moving else 0.0
 	var sway_x := sin(_sway_time * 0.7) * 0.006 * tension01
 	var sway_y := sin(_sway_time * 1.1) * 0.004 * tension01
-	_camera.position = Vector3(bob_x + sway_x, bob_y + sway_y - _dip, 0.0)
-	_camera.rotation.z = sin(_sway_time * 0.9) * 0.0035 * tension01
+	var shake_x := 0.0
+	var shake_y := 0.0
+	if _shake > 0.0:
+		_shake = maxf(_shake - delta, 0.0)
+		shake_x = _shake_rng.randf_range(-1.0, 1.0) * _shake * 0.045
+		shake_y = _shake_rng.randf_range(-1.0, 1.0) * _shake * 0.045
+	_camera.position = Vector3(bob_x + sway_x + shake_x, bob_y + sway_y - _dip + shake_y, 0.0)
+	_camera.rotation.z = sin(_sway_time * 0.9) * 0.0035 * tension01 \
+		+ (_shake_rng.randf_range(-1.0, 1.0) * _shake * 0.03 if _shake > 0.0 else 0.0)
 	var target_fov := _base_fov + (FOV_KICK if sprinting else 0.0)
 	_camera.fov = lerpf(_camera.fov, target_fov, minf(6.0 * delta, 1.0))
 

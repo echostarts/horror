@@ -15,12 +15,15 @@ func _init(rng: RandomNumberGenerator, defs: Array[AnomalyDef]) -> void:
 	_defs = defs
 
 ## Возвращает AnomalyDef или null (сегмент без аномалии).
-func roll(tension: float) -> AnomalyDef:
+## max_tier — гейт Director'а (T3 только в финальной трети),
+## allow_strobe=false — режим фоточувствительности (Section 9).
+func roll(tension: float, max_tier: int = 3, allow_strobe: bool = true) -> AnomalyDef:
 	if _defs.is_empty() or _rng.randf() >= ANOMALY_CHANCE:
 		return null
 	var pool: Array[AnomalyDef] = []
 	for def: AnomalyDef in _defs:
-		if def.min_tension <= tension and def.id != _last_id:
+		if def.min_tension <= tension and def.tier <= max_tier \
+				and (allow_strobe or not def.strobe) and def.id != _last_id:
 			pool.append(def)
 	if pool.is_empty():
 		return null

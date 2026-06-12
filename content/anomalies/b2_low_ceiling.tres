@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AnomalyDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/anomalies/anomaly_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://src/anomalies/effects/b2_ceiling.gd" id="2_fx"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"b2_low_ceiling"
+display_name = "Потолок ниже на ~15%"
+category = &"SPATIAL"
+tier = 2
+spawn_weight = 1.0
+min_tension = 0.0
+effect_script = ExtResource("2_fx")

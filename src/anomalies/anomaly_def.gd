@@ -9,6 +9,9 @@ extends Resource
 @export_range(1, 3) var tier: int = 1   # T3 гейтится финальной третью слайса (M2)
 @export var spawn_weight: float = 1.0
 @export var min_tension: float = 0.0
+## Строб-класс мерцания: в режиме фоточувствительности (Section 9) Director
+## не допускает такие аномалии — селектор подставляет другие.
+@export var strobe: bool = false
 @export var conflicts_with: Array[StringName] = []
 @export var effect_script: GDScript     # extends AnomalyEffect
 @export var audio_cue: AudioStream      # опционально

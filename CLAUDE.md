@@ -6,77 +6,89 @@
 
 ## Статус
 
-- **Текущий майлстоун:** M1 — Vertical Slice Core: код готов, GUT 14/14,
-  smoke PASS, скриншоты сняты. **DoD M1 ждёт оператора**: личный плейтест +
-  «незнакомец за 10 минут понимает правило» (docs/PLAYTEST_M1.md).
-- M0 принят де-факто (M0-сборка работала у оператора после D-006).
-- Теги: `m0`, `m1` локально; remote окружения не принимает refs/tags (403) —
+- **Текущий майлстоун:** M2 — Content & Director: код готов, GUT 28/28,
+  smoke (полный забег 1→9 до концовки) PASS на 3 сидах. **DoD M2 ждёт
+  оператора**: полный забег + sign-off кривой Tension (docs/PLAYTEST_M2.md).
+- DoD M1 (плейтест оператора + «незнакомец понимает правило») тоже ещё
+  не подтверждён — M1/M2 можно гейтить одним плейтестом.
+- Теги: `m0`, `m1`, `m2` локально; remote не принимает refs/tags (403) —
   оператор вешает теги сам.
-- **Следующий:** M2 — Content & Director (все 15 аномалий, relief valves,
-  silence events, 2 скер-слота, скелет концовки, кривая Tension).
+- **Следующий:** M3 — Visual Pass (PS1/VHS-стек, свет, манифест-ассеты,
+  калибровка яркости, UI-оболочка с настройкой фоточувствительности).
 
 ## Что уже есть
 
-**M0:** Godot 4.4 проект (рендер **GL Compatibility**, D-006 — Vulkan на
-машине оператора рендерит чёрным), SubViewport 640×360 nearest + леттербокс,
-автолоады EventBus → SettingsService → GameState → AudioDirector → Director,
-шины Master/Music/Ambience/SFX/UI/Reverb, настройки user://settings.cfg,
-debug-оверлей F3, export preset Windows.
+**M0:** Godot 4.4 проект (рендер **GL Compatibility**, D-006), SubViewport
+640×360 nearest + леттербокс, автолоады EventBus → SettingsService →
+GameState → AudioDirector → Director, шины
+Master/Music/Ambience/SFX/UI/Reverb, настройки user://settings.cfg,
+debug-оверлей F3, export presets (Windows + Linux для контейнерной проверки).
 
-**M1:** луп целиком —
-- `src/systems/loop_manager.gd` — чистые вердикты (GUT).
-- `src/anomalies/` — AnomalyDef (.tres в content/anomalies) + AnomalyEffect +
-  AnomalySelector (seed-детерминизм, GUT). 6 аномалий: A1, B1, C1, D1, E3, F2.
-- `src/world/flight_module.gd` — switchback-модуль (канон метрик в
-  ARCHITECTURE.md «World metrics M1»); `chain_manager.gd` — тредмил 4 модулей,
-  re-anchor под глитчем, reset-перемотка, финал на 9-м.
-- Модель сегментов: Q(L) = площадка L + марш L+1 (ARCHITECTURE.md).
-- `src/player/player.gd` — head bob+шаги в такт, dip, sway, спринт/стамина
-  с дыханием, FOV-кик.
-- `src/fx/transition_layer.gd` (глитч/перемотка/финал-карточка),
-  `src/ui/subtitles.gd`, `src/audio/placeholder_sfx.gd` (процедурные
-  PLACEHOLDER_-WAV через AudioDirector._library).
-- GUT 9.4.0 в addons/gut (НЕ 9.5.0 — той нужен Godot 4.5+).
+**M1:** луп целиком — LoopManager (чистый, GUT), каркас аномалий
+(AnomalyDef .tres + AnomalyEffect + AnomalySelector, seed-детерминизм),
+switchback-кит flight_module.gd + chain_manager.gd (тредмил 4 модулей,
+re-anchor под глитчем, reset-перемотка), модель сегментов Q(L) = площадка L +
+марш L+1, контроллер с полным филом, transition_layer (глитч/перемотка/
+карточка), субтитры, процедурные PLACEHOLDER_-звуки через AudioDirector.
+
+**M2:** контент и дирижёр —
+- **Все 16 аномалий** Appendix A (в брифе «15», в списке 16 — D-011).
+  Эффекты: src/anomalies/effects/, ресурсы: content/anomalies/.
+- `src/systems/director_math.gd` — чистая математика (GUT): база
+  6+7.5·(этаж−1), гейты тиров (T3 = Tension≥55 И этаж≥7), микс эмбиента,
+  условия скеров. Director: relief valves, silence events (1–2/забег),
+  idle-вход, шедулинг скеров, photosensitivity-фильтр строб-аномалий.
+- Скер-слот 1 (силуэт на марше + стингер + микрошейк + глитч) и слот 2
+  (этаж 8: лампа за спиной + дыхание). Финал «Дом»: дверь №36 приоткрыта
+  (CSG-проём), подход → лампа гаснет → карточка.
+- 3-слойный эмбиент по Tension; эхо шагов F1 через AudioDirector (teardown).
+- В базе модуля: велосипед+замок+стояк (для A3), глазки дверей (E1),
+  скрытые носители всех аномалий; reset_landing_props() — возврат площадки
+  к базе без ребилда (игрок стоит на ней).
 
 ## Готчи / закреплённые решения (детали — ARCHITECTURE.md)
 
 - **D-006:** рендер = gl_compatibility. Не переключать на Vulkan-методы.
-- **D-007:** каждый commit маскируется VHS-глитчем; глитч не телеграфирует
-  аномалию (он всегда). Reset = перемотка ~1.1 c, игрок заморожен.
-- **D-001:** рампа по носам ступеней = постоянное stair-smoothing.
-- Area-коллбеки физики → менять дерево только `call_deferred` (ChainManager).
-- ChainManager строится по `EventBus.run_started` (после сидинга Director'а),
-  не в собственном `_ready`.
+- **D-007:** каждый commit маскируется VHS-глитчем; reset = перемотка ~1.1 c,
+  игрок заморожен.
+- **D-010:** после re-anchor — фантомные body_entered от Area3D; лечится
+  кулдауном 5 физ. кадров + deferred-мониторингом + гардом уровней ±1.
+  НЕ убирать `_ignore_frames` — вердикты начнут стрелять сами.
+- **D-012:** D2 (зеркальный трафарет) не ставится на этажах 1/8.
+- Area-коллбеки физики → менять дерево только `call_deferred`.
+- ChainManager строится по `EventBus.run_started`, не в `_ready`.
+- Шедулер ваншотов/silence/скеров — на ОТДЕЛЬНОМ RNG (_ambient_rng);
+  основной RNG расходуется только AnomalySelector'ом (детерминизм).
+- Эффект с глобальной побочкой (F1) обязан чистить её в teardown().
 - Тесты: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests
-  -ginclude_subdirs -gexit`.
-- Smoke: `ETAZH9_SMOKE=1` (+`ETAZH9_SEED=N`); скриншоты: `ETAZH9_SHOT=dir`
-  (+`ETAZH9_POSE="x,y,z,yaw,pitch"`), под xvfb в контейнере.
-- Шедулер дальних ваншотов Director'а живёт на ОТДЕЛЬНОМ RNG (_ambient_rng):
-  основной RNG расходуется только AnomalySelector'ом — иначе ломается
-  детерминизм вердиктного контента.
+  -ginclude_subdirs -gexit`. GUT 9.4.0 (НЕ 9.5 — нужен Godot 4.5+).
+- Smoke: `ETAZH9_SMOKE=1` (+`ETAZH9_SEED=N`) — полный забег 1→9 ботом;
+  скриншоты: `ETAZH9_SHOT=dir` (+`ETAZH9_POSE="x,y,z,yaw,pitch"`) под xvfb;
+  форс аномалии: `ETAZH9_FORCE=<id>`.
+- E2-скриншот «в лоб» невозможен: gaze-детект уводит силуэт за 0.4 c —
+  снимать с отворотом камеры >12°.
 - Двери: {2·этаж+17, 2·этаж+18}; «№40» Жильца вне нумерации — намеренно.
-- EventBus «unused signal» предупреждения — ожидаемы.
 
 ## Среда / инструменты
 
-- Godot 4.4.1 stable; headless-бинарь в контейнере: /tmp/godot (качается с
-  GitHub releases). Валидация: import → GUT → smoke → xvfb-скриншоты.
-- Windows-экспорт из контейнера работает (шаблоны 4.4.1, rcedit нет — иконка
-  дефолтная, не критично).
+- Godot 4.4.1 stable; headless-бинарь: /tmp/godot (с GitHub releases).
+  Валидация: import → GUT → smoke → xvfb-скриншоты → Linux-экспорт smoke.
+- Windows-экспорт работает (rcedit нет — иконка дефолтная). GUT/tests
+  исключены из экспорта (exclude_filter).
 
-## План M2 (следующая сессия)
+## План M3 (следующая сессия)
 
-1. Остальные 9 аномалий (A2, A3, B2, B3, C2, C3, D2, E1, E2) — пропсы-носители
-   уже частично в модуле (велосипед, глазки дверей — добавить).
-2. Director: авторская кривая Tension, relief valves (≥2 спокойных пролёта
-   после T3/reset), silence events (полная тишина 5–10 c перед T2/T3),
-   гейт T3 финальной третью.
-3. Скер-слоты 1 (E2-эскалация) и 2 (лампа+дыхание) — каркас.
-4. Скелет концовки «Дом» (дверь приоткрыта, статичный кадр, лампа гаснет).
-5. Тюнинг: ANOMALY_CHANCE, скорость, длина забега до 10–15 мин.
-6. GUT на математику Director'а и гейты тиров.
+1. PS1/VHS-стек (Section 5): vertex snap + affine (spatial), дизеринг+
+   постеризация, туман, VHS-слой (сканлайны/хрома/шум/глитч-шейдер вместо
+   ColorRect-заглушки), зерно+виньетка от Tension, CRT-тогл.
+2. Свет: мёртвые лампы, одна мерцающая на забег (authored patterns).
+3. ASSET_MANIFEST: шопинг-лист текстур/моделей для оператора; интеграция.
+4. UX-оболочка: меню VHS, пауза, настройки (вкл. фоточувствительность),
+   калибровка яркости first-boot.
+5. DoD: 3 скриншота проходят «незнакомец думает, что это платная игра».
 
 ## Оператору (Алексей)
 
-- Как плейтестить M1 — **docs/PLAYTEST_M1.md** (DoD: незнакомец + правило).
+- Плейтест M2 — **docs/PLAYTEST_M2.md** (DoD: полный забег + sign-off кривой
+  Tension). M1-DoD можно закрыть тем же плейтестом.
 - Шопинг-лист ассетов — ASSET_MANIFEST.md (закупка к M3).
