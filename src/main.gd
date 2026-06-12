@@ -18,6 +18,8 @@ func _ready() -> void:
 		add_child(DebugOverlay.new())
 	if OS.get_environment("ETAZH9_SMOKE") == "1":
 		add_child(preload("res://src/dev/smoke_check.gd").new())
+	if not OS.get_environment("ETAZH9_SHOT").is_empty():
+		add_child(preload("res://src/dev/shot_check.gd").new())
 	GameState.start_run()
 
 func _unhandled_input(event: InputEvent) -> void:
