@@ -17,7 +17,8 @@
 
 ## Что уже есть (M0)
 
-- Godot 4.4 проект, Forward+, главная сцена `scenes/main.tscn`.
+- Godot 4.4 проект, рендер **OpenGL Compatibility** (D-006! Vulkan на машине
+  оператора рендерит чёрным), главная сцена `scenes/main.tscn`.
 - Низкое внутреннее разрешение: `SubViewportContainer (nearest)` + `SubViewport`
   640×360 (настройка `video/internal_height`: 180/270/360), леттербокс при ресайзе — `src/main.gd`.
 - Автолоады (порядок важен): `EventBus` → `SettingsService` → `GameState` →

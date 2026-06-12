@@ -1,5 +1,9 @@
 # Playtest M0 — инструкция для оператора
 
+> Рендер проекта — OpenGL Compatibility (D-006): в консоли debug-сборки
+> должна быть строка «OpenGL API … Compatibility». Если видишь «Vulkan …» —
+> запущена старая сборка.
+
 ## Запуск в редакторе (быстрая проверка)
 
 1. Godot **4.4.x stable** → Import → выбери `project.godot`.

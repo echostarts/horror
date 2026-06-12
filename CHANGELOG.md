@@ -3,6 +3,18 @@
 Формат: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/);
 версии = теги майлстоунов (BRIEF Section 10).
 
+## [m0.1] — 2026-06-12 — Renderer hotfix
+
+### Changed
+- Базовый рендер: Forward+ → **OpenGL Compatibility** (решение оператора,
+  ARCHITECTURE.md D-006): на машине гейм-директора Vulkan-путь Godot
+  (Forward+ и Mobile) рендерит освещаемые материалы чёрным; OpenGL работает.
+  Forward+ доступен флагами `--rendering-method forward_plus --rendering-driver vulkan`.
+
+### Added
+- `src/dev/shot_check.gd` — рендер-диагностика (env `ETAZH9_SHOT=каталог`):
+  PNG-дампы корневого окна и SubViewport + средняя яркость.
+
 ## [m0] — 2026-06-12 — Foundation
 
 ### Added
