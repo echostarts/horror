@@ -25,6 +25,9 @@ var _player: Player
 var _fx: TransitionLayer
 var _busy: bool = false
 var _finished: bool = false
+## Первый вопрос забега всегда чистый: игрок должен увидеть «норму», прежде
+## чем искать отклонения (грамматика Exit 8, Pillar 5 — честность).
+var _first_question: bool = true
 ## Кулдаун (физ. кадры) после re-anchor: перемещение/ребилд модулей рождает
 ## фантомные body_entered кадром позже — реальный траверс занимает секунды.
 var _ignore_frames: int = 0
@@ -46,6 +49,7 @@ func _on_run_started(_seed_value: int) -> void:
 	_selector = AnomalySelector.new(Director.rng(), _defs)
 	_loop.reset_to_start()
 	_finished = false
+	_first_question = true
 	for level: int in WINDOW:
 		if not _modules.has(level):
 			var module := FlightModule.new()
@@ -58,6 +62,10 @@ func _on_run_started(_seed_value: int) -> void:
 	_modules[0].reveal_stencil(_loop.floor_number)
 	_stage_question()
 	_ignore_frames = 5
+	# Единственный разрешённый хинт — субтитром на первом пролёте (Section 8).
+	get_tree().create_timer(2.5).timeout.connect(func() -> void:
+		EventBus.subtitle_requested.emit(
+			"Что-то не так на этаже — спустись на пролёт. Всё как всегда — поднимайся.", 6.0))
 
 ## Полная пересборка окна в базовое состояние вокруг текущего этажа.
 func _rebuild_all_baseline() -> void:
@@ -87,6 +95,9 @@ func _stage_question() -> void:
 			if String(def.id) == _forced_id:
 				_question = def
 		_effect = _question.make_effect() if _question != null else null
+	elif _first_question:
+		_question = null     # первый сегмент забега — эталон «нормы»
+		_effect = null
 	elif Director.consume_relief():
 		_question = null     # relief valve: спокойный пролёт без ролла
 		_effect = null
@@ -101,6 +112,7 @@ func _stage_question() -> void:
 			if _question != null and _question.id == &"d2_mirrored_stencil":
 				_question = null
 		_effect = _question.make_effect() if _question != null else null
+	_first_question = false
 	var flight_cfg := _baseline_cfg(1)
 	if _effect != null:
 		_effect.pre_build(flight_cfg)
