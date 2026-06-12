@@ -35,6 +35,8 @@ var level: int = 0   # ступень тредмила; выставляет Cha
 var _lamp_light: OmniLight3D
 var _lamp_box: CSGBox3D
 var _stencil: Label3D
+var _stencil_spot: SpotLight3D
+var _stencil_tween: Tween
 var _door_labels: Array[Label3D] = []
 var _doors: Array[CSGBox3D] = []
 var _graffiti: Label3D
@@ -210,6 +212,17 @@ func _build_props() -> void:
 	_stencil.text = str(cfg.floor_label)
 	_stencil.visible = false   # delayed verdict: открывается только при commit
 	add_child(_stencil)
+
+	# Подсветка reveal'а (Section 8: «staged with light + piano-wire note»):
+	# узкий луч на трафарет, разжигается при коммите.
+	_stencil_spot = SpotLight3D.new()
+	_stencil_spot.name = "StencilSpot"
+	_stencil_spot.light_color = Color(0.95, 0.9, 0.78)
+	_stencil_spot.light_energy = 0.0
+	_stencil_spot.spot_range = 2.6
+	_stencil_spot.spot_angle = 24.0
+	_stencil_spot.position = Vector3(0.0, landing_y + 2.25, wall_z - 0.75)
+	add_child(_stencil_spot)
 
 	# Почтовые ящики между дверями, под трафаретом.
 	_box("Mailboxes", Vector3(0.55, 0.45, 0.12),
@@ -405,6 +418,13 @@ func set_door_floor(floor_label: int) -> void:
 func reveal_stencil(floor_label: int) -> void:
 	_stencil.text = str(floor_label)
 	_stencil.visible = true
+	_stencil_spot.look_at(_stencil.global_position)
+	if _stencil_tween != null and _stencil_tween.is_running():
+		_stencil_tween.kill()
+	_stencil_spot.light_energy = 0.0
+	_stencil_tween = create_tween()
+	_stencil_tween.tween_property(_stencil_spot, "light_energy", 1.1, 0.45) \
+		.set_trans(Tween.TRANS_SINE)
 
 func set_lamp_warm() -> void:
 	_lamp_light.light_color = WARM_LIGHT
