@@ -1,0 +1,20 @@
+class_name AnomalyEffect
+extends RefCounted
+## Базовый эффект аномалии. «Вопрос» сегмента Q(L) живёт на ДВУХ носителях:
+## площадке текущего модуля (L) и марше модуля выше (L+1) — см. ARCHITECTURE.md
+## «Модель сегментов». Жизненный цикл: roll -> pre_build(конфиг марша L+1) ->
+## rebuild модуля L+1 -> post_build(оба модуля). Отдельный teardown не нужен:
+## рестейдж = полная пересборка процедурного модуля.
+
+## Правит конфиг сборки марша-носителя до построения (например, 13 ступеней).
+func pre_build(_flight_cfg: SegmentConfig) -> void:
+	pass
+
+## Правит готовые модули: landing — площадка, где стоит игрок (только хуки,
+## без пересборки!), flight — свежесобранный модуль марша выше.
+func post_build(_landing: FlightModule, _flight: FlightModule) -> void:
+	pass
+
+## Игрок вошёл в марш-носитель (для событийных аномалий вроде F2).
+func on_flight_entered(_flight: FlightModule) -> void:
+	pass

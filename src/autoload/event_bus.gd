@@ -24,6 +24,9 @@ signal silence_event_started(duration: float)
 signal silence_event_ended
 signal scare_triggered(slot: int)              # 1 или 2 (см. BRIEF Appendix A)
 
+# --- UI ---
+signal subtitle_requested(text: String, duration: float)
+
 # --- Настройки / оболочка ---
 signal setting_changed(key: StringName, value: Variant)
 signal pause_toggled(paused: bool)

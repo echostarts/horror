@@ -1,10 +1,7 @@
 extends Node
-## Оболочка: владеет low-res SubViewport-пайплайном, захватом мыши
-## и (только в debug-сборках) диагностическим оверлеем.
-##
-## Мышиный look обрабатывается ЗДЕСЬ (корневой viewport) и пробрасывается
-## в Player.apply_look — так масштаб SubViewportContainer гарантированно
-## не влияет на чувствительность (ARCHITECTURE.md, D-002).
+## Оболочка: low-res SubViewport-пайплайн, захват мыши, оверлеи (переходы,
+## субтитры, debug). Мышиный look обрабатывается ЗДЕСЬ (корневой viewport)
+## и пробрасывается в Player.apply_look (ARCHITECTURE.md, D-002).
 
 @onready var _container: SubViewportContainer = $GameViewportContainer
 @onready var _viewport: SubViewport = $GameViewportContainer/GameViewport
@@ -14,13 +11,19 @@ func _ready() -> void:
 	get_window().size_changed.connect(_fit_viewport_to_window)
 	EventBus.setting_changed.connect(_on_setting_changed)
 	_apply_internal_resolution()
+	add_child(TransitionLayer.new())
+	add_child(Subtitles.new())
 	if OS.is_debug_build():
 		add_child(DebugOverlay.new())
 	if OS.get_environment("ETAZH9_SMOKE") == "1":
 		add_child(preload("res://src/dev/smoke_check.gd").new())
 	if not OS.get_environment("ETAZH9_SHOT").is_empty():
 		add_child(preload("res://src/dev/shot_check.gd").new())
-	GameState.start_run()
+	var forced_seed := 0
+	var seed_env := OS.get_environment("ETAZH9_SEED")
+	if not seed_env.is_empty():
+		forced_seed = int(seed_env)
+	GameState.start_run(forced_seed)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:

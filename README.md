@@ -8,6 +8,6 @@ Godot 4.4+, GDScript. 2:47 ночи, лифт не работает, девят�
 - Состояние проекта / ритуал сессии: [CLAUDE.md](CLAUDE.md)
 - Архитектура: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Ассеты/шопинг-лист: [ASSET_MANIFEST.md](ASSET_MANIFEST.md)
-- Как проверить текущий майлстоун: [docs/PLAYTEST_M0.md](docs/PLAYTEST_M0.md)
+- Как проверить текущий майлстоун: [docs/PLAYTEST_M1.md](docs/PLAYTEST_M1.md)
 
 Запуск: Godot 4.4.x stable → Import → `project.godot` → F5.

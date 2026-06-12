@@ -6,72 +6,77 @@
 
 ## Статус
 
-- **Текущий майлстоун:** M0 — Foundation: код готов, коммит `540bc10`.
-  Тег `m0` создан локально, но remote этого окружения принимает пуш только
-  в рабочую ветку (403 на refs/tags) — оператор: повесь тег `m0` на коммит
-  M0 сам (`git tag -a m0 540bc10 && git push origin m0`).
-  **DoD M0 ждёт подтверждения оператора** (прогулка по греябоксу при 60 fps
-  в Windows-сборке — см. docs/PLAYTEST_M0.md). Контейнер разработки не может
-  собрать/запустить Windows-билд, поэтому fps-цифры НЕ заявлены.
-- **Следующий:** M1 — Vertical Slice Core (BRIEF Section 10).
+- **Текущий майлстоун:** M1 — Vertical Slice Core: код готов, GUT 14/14,
+  smoke PASS, скриншоты сняты. **DoD M1 ждёт оператора**: личный плейтест +
+  «незнакомец за 10 минут понимает правило» (docs/PLAYTEST_M1.md).
+- M0 принят де-факто (M0-сборка работала у оператора после D-006).
+- Теги: `m0`, `m1` локально; remote окружения не принимает refs/tags (403) —
+  оператор вешает теги сам.
+- **Следующий:** M2 — Content & Director (все 15 аномалий, relief valves,
+  silence events, 2 скер-слота, скелет концовки, кривая Tension).
 
-## Что уже есть (M0)
+## Что уже есть
 
-- Godot 4.4 проект, рендер **OpenGL Compatibility** (D-006! Vulkan на машине
-  оператора рендерит чёрным), главная сцена `scenes/main.tscn`.
-- Низкое внутреннее разрешение: `SubViewportContainer (nearest)` + `SubViewport`
-  640×360 (настройка `video/internal_height`: 180/270/360), леттербокс при ресайзе — `src/main.gd`.
-- Автолоады (порядок важен): `EventBus` → `SettingsService` → `GameState` →
-  `AudioDirector` → `Director`. Все в `src/autoload/`.
-- `SettingsService`: user://settings.cfg, дефолты всех будущих настроек,
-  громкости сразу применяются к шинам.
-- Аудио-шины: Master / Music / Ambience / SFX / UI / Reverb (бетонный хвост,
-  send-эмуляция — см. ARCHITECTURE.md D-004). `AudioDirector.play_varied()` —
-  пул из 12 `AudioStreamPlayer3D`, ±4% питч.
-- `src/player/player.gd` — минимальный FP-контроллер (ходьба/обзор/геймпад).
-- `src/world/greybox_flight.gd` — процедурный CSG-модуль: 12 ступеней,
-  2 площадки, 2 двери (35/36), 2 лампы, окно. Размеры = канонический референс.
-- Debug-оверлей F3 (`src/dev/debug_overlay.gd`): FPS, этаж, фаза, seed,
-  график Tension. Только при `OS.is_debug_build()`.
-- Export preset «Windows Desktop» (`export_presets.cfg`), embed_pck.
-- Input map: WASD/стрелки + мышь + геймпад (стики, Start=пауза), F3, Esc.
+**M0:** Godot 4.4 проект (рендер **GL Compatibility**, D-006 — Vulkan на
+машине оператора рендерит чёрным), SubViewport 640×360 nearest + леттербокс,
+автолоады EventBus → SettingsService → GameState → AudioDirector → Director,
+шины Master/Music/Ambience/SFX/UI/Reverb, настройки user://settings.cfg,
+debug-оверлей F3, export preset Windows.
 
-## Готчи / закреплённые решения (подробно — ARCHITECTURE.md)
+**M1:** луп целиком —
+- `src/systems/loop_manager.gd` — чистые вердикты (GUT).
+- `src/anomalies/` — AnomalyDef (.tres в content/anomalies) + AnomalyEffect +
+  AnomalySelector (seed-детерминизм, GUT). 6 аномалий: A1, B1, C1, D1, E3, F2.
+- `src/world/flight_module.gd` — switchback-модуль (канон метрик в
+  ARCHITECTURE.md «World metrics M1»); `chain_manager.gd` — тредмил 4 модулей,
+  re-anchor под глитчем, reset-перемотка, финал на 9-м.
+- Модель сегментов: Q(L) = площадка L + марш L+1 (ARCHITECTURE.md).
+- `src/player/player.gd` — head bob+шаги в такт, dip, sway, спринт/стамина
+  с дыханием, FOV-кик.
+- `src/fx/transition_layer.gd` (глитч/перемотка/финал-карточка),
+  `src/ui/subtitles.gd`, `src/audio/placeholder_sfx.gd` (процедурные
+  PLACEHOLDER_-WAV через AudioDirector._library).
+- GUT 9.4.0 в addons/gut (НЕ 9.5.0 — той нужен Godot 4.5+).
 
-- **D-001:** ступени греябокса — визуальные; капсулу несёт невидимая рампа
-  `StairRamp` по линии носов ступеней. В M1 заменить честным stair-smoothing.
-- **D-002:** мышиный look обрабатывает `src/main.gd` (корневой viewport) и
-  пробрасывает в `Player.apply_look()` — иначе масштаб SubViewportContainer
-  влиял бы на чувствительность.
-- **D-003:** debug-оверлей не «компилируется out» (GDScript), а не
-  инстанцируется в release. FPS проверять в debug-экспорте.
-- **D-004:** в Godot нет aux-send'ов; reverb-хвост в M4 — дублированием
-  позиционных ваншотов на шину Reverb вторым плеером пула.
-- SubViewport: `audio_listener_enable_3d = true` обязателен (камера внутри него).
-- EventBus даёт предупреждения "unused signal" — ожидаемо, сигналы эмитят другие скрипты.
-- `.uid`-сайдкары скриптов и `.import`-файлы коммитим; `.godot/` — в .gitignore.
-- Никаких сырых `play()` в геймплее — только `AudioDirector.play_varied()`.
+## Готчи / закреплённые решения (детали — ARCHITECTURE.md)
+
+- **D-006:** рендер = gl_compatibility. Не переключать на Vulkan-методы.
+- **D-007:** каждый commit маскируется VHS-глитчем; глитч не телеграфирует
+  аномалию (он всегда). Reset = перемотка ~1.1 c, игрок заморожен.
+- **D-001:** рампа по носам ступеней = постоянное stair-smoothing.
+- Area-коллбеки физики → менять дерево только `call_deferred` (ChainManager).
+- ChainManager строится по `EventBus.run_started` (после сидинга Director'а),
+  не в собственном `_ready`.
+- Тесты: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests
+  -ginclude_subdirs -gexit`.
+- Smoke: `ETAZH9_SMOKE=1` (+`ETAZH9_SEED=N`); скриншоты: `ETAZH9_SHOT=dir`
+  (+`ETAZH9_POSE="x,y,z,yaw,pitch"`), под xvfb в контейнере.
+- Шедулер дальних ваншотов Director'а живёт на ОТДЕЛЬНОМ RNG (_ambient_rng):
+  основной RNG расходуется только AnomalySelector'ом — иначе ломается
+  детерминизм вердиктного контента.
+- Двери: {2·этаж+17, 2·этаж+18}; «№40» Жильца вне нумерации — намеренно.
+- EventBus «unused signal» предупреждения — ожидаемы.
 
 ## Среда / инструменты
 
-- Godot 4.4.x stable, GDScript со статической типизацией везде.
-- GUT ещё НЕ установлен — ставим в начале M1 (AssetLib «GUT», MIT, в addons/gut).
-- Валидация в headless-контейнере: `godot --headless --import` +
-  `godot --headless --quit-after N` (см. docs/PLAYTEST_M0.md).
+- Godot 4.4.1 stable; headless-бинарь в контейнере: /tmp/godot (качается с
+  GitHub releases). Валидация: import → GUT → smoke → xvfb-скриншоты.
+- Windows-экспорт из контейнера работает (шаблоны 4.4.1, rcedit нет — иконка
+  дефолтная, не критично).
 
-## План M1 (следующая сессия)
+## План M2 (следующая сессия)
 
-1. GUT в addons/ + первый тестовый прогон.
-2. Loop Manager — чистый класс `(anomaly_state, direction) -> advance|reset`,
-   GUT-тесты вердиктов; delayed verdict (трафарет на следующей площадке).
-3. Греябокс-кит с switchback-чейнингом модулей (вверх/вниз, телепорт-луп).
-4. Полный контроллер: head bob + синхронизация шагов, landing dip, sway,
-   стамина (звуковой фидбек), stair smoothing (убрать D-001).
-5. 6 аномалий — по одной на категорию (A1, B1, C1, D1, E3, F2 — обсудить выбор).
-6. Reset-переход (VHS rewind можно заглушкой до M3).
-7. Временный звук (PLACEHOLDER_ процедурные тоны) через AudioDirector.
+1. Остальные 9 аномалий (A2, A3, B2, B3, C2, C3, D2, E1, E2) — пропсы-носители
+   уже частично в модуле (велосипед, глазки дверей — добавить).
+2. Director: авторская кривая Tension, relief valves (≥2 спокойных пролёта
+   после T3/reset), silence events (полная тишина 5–10 c перед T2/T3),
+   гейт T3 финальной третью.
+3. Скер-слоты 1 (E2-эскалация) и 2 (лампа+дыхание) — каркас.
+4. Скелет концовки «Дом» (дверь приоткрыта, статичный кадр, лампа гаснет).
+5. Тюнинг: ANOMALY_CHANCE, скорость, длина забега до 10–15 мин.
+6. GUT на математику Director'а и гейты тиров.
 
 ## Оператору (Алексей)
 
-- Шопинг-лист ассетов — ASSET_MANIFEST.md (пока заготовка, основной список к M3).
-- Как проверить M0 — docs/PLAYTEST_M0.md.
+- Как плейтестить M1 — **docs/PLAYTEST_M1.md** (DoD: незнакомец + правило).
+- Шопинг-лист ассетов — ASSET_MANIFEST.md (закупка к M3).

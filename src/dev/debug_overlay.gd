@@ -34,6 +34,7 @@ var _panel: VBoxContainer
 var _info: Label
 var _graph: TensionGraph
 var _accum: float = 0.0
+var _anomaly: String = "—"
 
 func _init() -> void:
 	layer = 100
@@ -48,6 +49,8 @@ func _ready() -> void:
 	_panel.add_child(_info)
 	_graph = TensionGraph.new()
 	_panel.add_child(_graph)
+	EventBus.anomaly_spawned.connect(func(id: StringName) -> void: _anomaly = String(id))
+	EventBus.anomaly_cleared.connect(func(_id: StringName) -> void: _anomaly = "—")
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"toggle_debug_overlay"):
@@ -61,11 +64,14 @@ func _process(delta: float) -> void:
 	_graph.push_sample(Director.tension)
 	if not _panel.visible:
 		return
-	_info.text = "FPS: %d (%.2f ms)\nЭтаж: %d | Фаза: %s\nSeed: %d\nTension: %.1f\nАномалия: — (придёт в M1)" % [
+	_info.text = "FPS: %d (%.2f ms)\nЭтаж: %d | Фаза: %s | Серия: %d | Ошибки: %d\nSeed: %d\nTension: %.1f\nАномалия (Q): %s" % [
 		Engine.get_frames_per_second(),
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 		GameState.current_floor,
 		GameState.Phase.keys()[GameState.phase],
+		GameState.correct_streak,
+		GameState.mistakes,
 		GameState.run_seed,
 		Director.tension,
+		_anomaly,
 	]

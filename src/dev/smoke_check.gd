@@ -1,22 +1,47 @@
 extends Node
-## Smoke-проверка для headless-прогонов (создаётся Main'ом только при
-## env ETAZH9_SMOKE=1): ждёт приземления капсулы, зажимает move_forward,
-## через 6 секунд проверяет, что игрок поднялся по пролёту (y ≈ 2.1),
-## и завершает процесс с кодом 0/1. Геймплей не трогает.
-##
-## Запуск: ETAZH9_SMOKE=1 godot --headless
+## Smoke-проверка M1 (env ETAZH9_SMOKE=1, headless): телепорт-коммиты лупа.
+## Игрока 6 раз переносит на площадку уровня +1: каждый перенос обязан дать
+## commit (advance ИЛИ reset — оба легальны), re-anchor обязан удерживать
+## мир у origin. Сами вердикты покрыты GUT-тестами LoopManager.
 
-@onready var _player: CharacterBody3D = get_node("/root/Main/GameViewportContainer/GameViewport/World/Player")
+var _commits: int = 0
 
 func _ready() -> void:
+	EventBus.verdict_resolved.connect(func(_c: bool, _f: int) -> void: _commits += 1)
+	_run.call_deferred()
+
+func _run() -> void:
 	await get_tree().create_timer(1.0).timeout
-	var landed := _player.is_on_floor()
-	var start := _player.global_position
-	Input.action_press(&"move_forward")
-	await get_tree().create_timer(6.0).timeout
-	Input.action_release(&"move_forward")
-	var end := _player.global_position
-	print("SMOKE landed=%s start=%v end=%v climbed=%.2f" % [landed, start, end, end.y - start.y])
-	var ok := landed and end.y > 1.8 and end.z > 4.5
+	var player := get_tree().get_first_node_in_group(&"player") as CharacterBody3D
+	var chain := get_tree().get_first_node_in_group(&"chain_manager") as ChainManager
+	var landed := player.is_on_floor()
+	for i: int in 6:
+		if not await _wait_idle(chain):
+			break
+		var before := _commits
+		var target := chain.debug_module(1)
+		player.global_position = target.landing_center_global() + Vector3(0.0, 0.2, 0.0)
+		if not await _wait_commit(before):
+			break
+	var y_bounded := absf(player.global_position.y) < 8.0
+	print("SMOKE landed=%s commits=%d y=%.2f floor=%d tension=%.1f" % [
+		landed, _commits, player.global_position.y, GameState.current_floor, Director.tension])
+	var ok := landed and _commits == 6 and y_bounded
 	print("SMOKE RESULT: %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
+
+func _wait_idle(chain: ChainManager) -> bool:
+	for frame: int in 600:
+		if not chain.is_busy():
+			return true
+		await get_tree().process_frame
+	push_error("SMOKE: ChainManager не освободился за 600 кадров")
+	return false
+
+func _wait_commit(before: int) -> bool:
+	for frame: int in 600:
+		if _commits > before:
+			return true
+		await get_tree().process_frame
+	push_error("SMOKE: commit не случился за 600 кадров")
+	return false

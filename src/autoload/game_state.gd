@@ -1,7 +1,7 @@
 extends Node
-## Авторитетное состояние забега: этаж, seed, фаза. Чистые данные —
-## никакого рендера и звука. Мутировать состояние этажа имеет право
-## только Loop Manager (появится в M1).
+## Авторитетное состояние забега: этаж, seed, фаза, серии. Чистые данные —
+## никакого рендера и звука. Этаж мутируется ТОЛЬКО через apply_verdict
+## (вердикты считает LoopManager, оркестрирует ChainManager).
 
 enum Phase { BOOT, MENU, CALIBRATION, RUN, ENDING }
 
@@ -22,12 +22,10 @@ func start_run(forced_seed: int = 0) -> void:
 	phase = Phase.RUN
 	EventBus.run_started.emit(run_seed)
 
-func advance_floor() -> void:
-	current_floor = mini(current_floor + 1, TOP_FLOOR)
-	correct_streak += 1
-
-func reset_run() -> void:
-	current_floor = FIRST_FLOOR
-	correct_streak = 0
-	mistakes += 1
-	EventBus.run_reset.emit()
+func apply_verdict(correct: bool, floor_value: int) -> void:
+	current_floor = floor_value
+	if correct:
+		correct_streak += 1
+	else:
+		correct_streak = 0
+		mistakes += 1

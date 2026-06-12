@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AnomalyDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/anomalies/anomaly_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://src/anomalies/effects/c1_lamp.gd" id="2_fx"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"c1_warm_lamp"
+display_name = "Лампа горит тёплым вместо холодного"
+category = &"LIGHT"
+tier = 1
+spawn_weight = 1.0
+min_tension = 0.0
+effect_script = ExtResource("2_fx")

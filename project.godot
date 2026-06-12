@@ -30,6 +30,10 @@ Director="*res://src/autoload/director.gd"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
 [input]
 
 move_forward={
